@@ -2,12 +2,41 @@
 
 
 import rhino3dm
-
+import csv
+import os
 from honeybee_radiance.sensorgrid import SensorGrid
 from honeybee.typing import clean_and_id_string, clean_string
 
 from .togeometry import mesh_to_mesh3d, to_face3d
 from .layer import objects_on_layer, objects_on_parent_child
+
+
+class DataWriter:
+    def __init__(self, name, pos, dir, target_folder=None):
+        self.name = name
+        self.pos = pos
+        self.dir = dir
+        self.target_folder = target_folder
+
+    def write_csv(self):
+        # if target_folder is provided
+        if self.target_folder:
+            # validate target folder
+            if not os.path.exists(self.target_folder):
+                raise ValueError(
+                    'Target foldder is not a valid path.'
+                )
+            file_name = os.path.join(self.target_folder, self.name + '.csv')
+        else:
+            file_name = self.name + '.csv'
+
+        with open(file_name, mode='w', newline='') as csv_file:
+            csv_writer = csv.writer(csv_file, delimiter=',')
+
+            csv_writer.writerow([self.name])
+            for i in range(len(self.pos)):
+                csv_writer.writerow([self.pos[i][0], self.pos[i][1], self.pos[i]
+                                    [2], self.dir[i][0], self.dir[i][1], self.dir[i][2]])
 
 
 def import_grids(
@@ -30,6 +59,9 @@ def import_grids(
         A list of Honeybee grids.
     """
     hb_grids = []
+    grid_pos = []
+    grid_dir = []
+
     # if objects on child layers are not requested
     if not child_layer:
         grid_objs = objects_on_layer(rhino3dm_file, layer)
@@ -49,11 +81,9 @@ def import_grids(
         # This is done so that if a user has created mesh with certain density
         # the same can be used to create grids
         if isinstance(geo, rhino3dm.Mesh):
-            mesh3d = mesh_to_mesh3d(geo)
-            name = obj.Attributes.Name
-            obj_name = name or clean_and_id_string('Grid')
-            args = [clean_string(obj_name), mesh3d]
-            hb_grids.append(SensorGrid.from_mesh3d(*args))
+            raise ValueError(
+                'Mesh is not accepted.'
+            )
 
         else:
             try:
@@ -70,10 +100,17 @@ def import_grids(
             args = [
                 clean_string(obj_name), faces, grid_controls[0], grid_controls[0],
                 grid_controls[1]]
+
             sens = SensorGrid.from_face3d(*args)
             pos = [item.pos for item in sens]
-            print(pos)
-            print(" ")
-            hb_grids.append(SensorGrid.from_face3d(*args))
+            dir = [item.dir for item in sens]
+            grid_pos += pos
+            grid_dir += dir
+
+            obj = DataWriter(layer.Name + '_' + obj_name, pos, dir)
+            obj.write_csv()
+
+    hb_grids.append(SensorGrid.from_position_and_direction(
+                    identifier=layer.Name, positions=grid_pos, directions=grid_dir))
 
     return hb_grids
