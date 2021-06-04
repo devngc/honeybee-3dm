@@ -11,7 +11,7 @@ from .layer import objects_on_layer, objects_on_parent_child
 
 
 def import_grids(
-    rhino3dm_file, layer, tolerance, *, grid_controls=None, child_layer=False):
+        rhino3dm_file, layer, tolerance, *, grid_controls=None, child_layer=False):
     """Creates Honeybee grids from a rhino3dm file.
 
     This function assumes all the grid objects are under a layer named ``grid``.
@@ -25,7 +25,7 @@ def import_grids(
             for grid-size-x, grid-size-y, and grid-offset respectively.
         child_layer: A bool. True will generate grids from the objects on the child layer
             of a layer in addition to the objects on the parent layer. Defaults to False.
-        
+
     Returns:
         A list of Honeybee grids.
     """
@@ -33,18 +33,18 @@ def import_grids(
     # if objects on child layers are not requested
     if not child_layer:
         grid_objs = objects_on_layer(rhino3dm_file, layer)
-    
+
     # if objects on child layers are requested
     if child_layer:
         grid_objs = objects_on_parent_child(rhino3dm_file, layer.Name)
-    
+
     # Set default grid settings if not provided
     if not grid_controls:
         grid_controls = (1.0, 1.0, 0.0)
 
     for obj in grid_objs:
         geo = obj.Geometry
-        
+
         # If it's a Mesh use it to create grids
         # This is done so that if a user has created mesh with certain density
         # the same can be used to create grids
@@ -60,16 +60,20 @@ def import_grids(
                 faces = to_face3d(obj, tolerance)
             except AssertionError:
                 raise AssertionError(
-                f'Please check object with ID: {obj.Attributes.Id}.'
-                ' Either the object has faces too small for the grid size, or the'
-                ' object is not supported for grids. You should try again with a'
-                ' smaller grid size in the config file.'
-            )
+                    f'Please check object with ID: {obj.Attributes.Id}.'
+                    ' Either the object has faces too small for the grid size, or the'
+                    ' object is not supported for grids. You should try again with a'
+                    ' smaller grid size in the config file.'
+                )
             name = obj.Attributes.Name
             obj_name = name or clean_and_id_string('Grid')
             args = [
                 clean_string(obj_name), faces, grid_controls[0], grid_controls[0],
                 grid_controls[1]]
+            sens = SensorGrid.from_face3d(*args)
+            pos = [item.pos for item in sens]
+            print(pos)
+            print(" ")
             hb_grids.append(SensorGrid.from_face3d(*args))
 
     return hb_grids

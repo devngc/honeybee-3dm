@@ -32,7 +32,7 @@ def import_3dm(path, name=None, *, config_path=None):
     if not os.path.isfile(path):
         raise FileNotFoundError(
             'The path to rhino file is not valid.'
-            )
+        )
     rhino3dm_file = rhino3dm.File3dm.Read(path)
     if not rhino3dm_file:
         raise ValueError(f'Input Rhino file: {path} returns None object.')
@@ -58,7 +58,7 @@ def import_3dm(path, name=None, *, config_path=None):
 
     # Place holders
     hb_rooms, hb_faces, hb_shades, hb_apertures, hb_doors, hb_grids = tuple(
-            [[] for _ in range(6)])
+        [[] for _ in range(6)])
 
     # A dictionary with child layer : parent layer structure
     child_to_parent = child_parent_dict(rhino3dm_file)
@@ -74,12 +74,12 @@ def import_3dm(path, name=None, *, config_path=None):
 
     # If config is provided
     if config:
-        
+
         for layer in rhino3dm_file.Layers:
 
             # If the layer is not in config and not "on" in rhino, ignore
             if layer.Name not in config['layers'] and \
-                layer.Name not in rhino_visible_layer_names:
+                    layer.Name not in rhino_visible_layer_names:
                 continue
 
             # Import objects from each layer in the config file
@@ -90,24 +90,24 @@ def import_3dm(path, name=None, *, config_path=None):
                 hb_shades.extend(hb_objs[1])
                 hb_apertures.extend(hb_objs[2])
                 hb_doors.extend(hb_objs[3])
-                hb_grids.extend(hb_objs[4])
+                hb_grids += hb_objs[4]
 
             # skip child layers that might already have been imported
             elif check_parent_in_config(rhino3dm_file, config,
-                layer.Name, child_to_parent[layer.Name]):
+                                        layer.Name, child_to_parent[layer.Name]):
                 continue
 
             # Import objects from each layer not in the config file
             elif layer.Name in rhino_visible_layer_names:
                 hb_faces.extend(import_objects(rhino3dm_file, layer,
-                    tolerance=model_tolerance))
-    
+                                               tolerance=model_tolerance))
+
     else:  # If config is not provided
         # Only use layers that are "on" in rhino
         for layer in rhino_visible_layers:
             hb_faces.extend(import_objects(rhino3dm_file, layer,
-                tolerance=model_tolerance))
-    
+                                           tolerance=model_tolerance))
+
     # Honeybee model name
     name = name or '.'.join(os.path.basename(path).split('.')[:-1])
 
