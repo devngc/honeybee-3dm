@@ -12,10 +12,9 @@ from .layer import objects_on_layer, objects_on_parent_child
 
 
 class DataWriter:
-    def __init__(self, name, pos, dir, target_folder=None):
+    def __init__(self, name, data, target_folder=None):
         self.name = name
-        self.pos = pos
-        self.dir = dir
+        self.data = data
         self.target_folder = target_folder
 
     def write_csv(self):
@@ -33,10 +32,8 @@ class DataWriter:
         with open(file_name, mode='w', newline='') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=',')
 
-            csv_writer.writerow([self.name])
-            for i in range(len(self.pos)):
-                csv_writer.writerow([self.pos[i][0], self.pos[i][1], self.pos[i]
-                                    [2], self.dir[i][0], self.dir[i][1], self.dir[i][2]])
+            for data in self.data:
+                csv_writer.writerow(data)
 
 
 def import_grids(
@@ -61,6 +58,7 @@ def import_grids(
     hb_grids = []
     grid_pos = []
     grid_dir = []
+    data = []
 
     # if objects on child layers are not requested
     if not child_layer:
@@ -107,10 +105,9 @@ def import_grids(
             grid_pos += pos
             grid_dir += dir
 
-            obj = DataWriter(layer.Name + '_' + obj_name, pos, dir)
-            obj.write_csv()
+            data.append([obj_name, len(sens)])
 
     hb_grids.append(SensorGrid.from_position_and_direction(
                     identifier=layer.Name, positions=grid_pos, directions=grid_dir))
 
-    return hb_grids
+    return hb_grids, data

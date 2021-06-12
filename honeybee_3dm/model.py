@@ -8,6 +8,7 @@ from .face import import_objects, import_objects_with_config
 from .helper import get_unit_system, check_parent_in_config
 from .layer import child_parent_dict, visible_layers
 from .config import check_config
+from .grid import DataWriter
 
 
 def import_3dm(path, name=None, *, config_path=None):
@@ -59,7 +60,7 @@ def import_3dm(path, name=None, *, config_path=None):
     # Place holders
     hb_rooms, hb_faces, hb_shades, hb_apertures, hb_doors, hb_grids = tuple(
         [[] for _ in range(6)])
-
+    olivier_data = []
     # A dictionary with child layer : parent layer structure
     child_to_parent = child_parent_dict(rhino3dm_file)
 
@@ -91,6 +92,7 @@ def import_3dm(path, name=None, *, config_path=None):
                 hb_apertures.extend(hb_objs[2])
                 hb_doors.extend(hb_objs[3])
                 hb_grids += hb_objs[4]
+                olivier_data += hb_objs[5]
 
             # skip child layers that might already have been imported
             elif check_parent_in_config(rhino3dm_file, config,
@@ -107,6 +109,11 @@ def import_3dm(path, name=None, *, config_path=None):
         for layer in rhino_visible_layers:
             hb_faces.extend(import_objects(rhino3dm_file, layer,
                                            tolerance=model_tolerance))
+
+    # write olivier csv data
+    olivier_data = [['Layer Name', 'Object Name', 'Num. of Sensors']] + olivier_data
+    data_obj = DataWriter('output', olivier_data)
+    data_obj.write_csv()
 
     # Honeybee model name
     name = name or '.'.join(os.path.basename(path).split('.')[:-1])

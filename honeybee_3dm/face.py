@@ -14,8 +14,8 @@ from .helper import face3d_to_hb_face_with_rad, child_layer_control
 
 
 tolerance_warning = 'Could not create a face for object of ID {} Please reduce the unit' \
-' tolerance value in rhino, save the file and try again. You might need to repeat' \
-' this more than once if the face is too small for the unit tolerance selected.'
+    ' tolerance value in rhino, save the file and try again. You might need to repeat' \
+    ' this more than once if the face is too small for the unit tolerance selected.'
 
 
 def import_objects_with_config(
@@ -43,7 +43,7 @@ def import_objects_with_config(
         -   Honeybee Aperture objects,
         -   Honeybee Door objects,
         -   Honeybee grids.
-        
+
         A list wil be empty if no objects are imported from rhino file.
 
     """
@@ -53,10 +53,13 @@ def import_objects_with_config(
     # If Grids are requested for a layer
     if grid_controls(config, layer.Name):
 
-        hb_grids = import_grids(
+        hb_grids, data = import_grids(
             rhino3dm_file, layer, tolerance,
             grid_controls=grid_controls(config, layer.Name),
             child_layer=child_layer_control(config, layer.Name))
+
+        for lst in data:
+            lst.insert(0, layer.Name)
 
     # If Grids are not requested for a layer
     else:
@@ -76,11 +79,11 @@ def import_objects_with_config(
                     'Shaded mesh could not be created for'
                     f' object with ID {obj.Attributes.Id}. Please make the object'
                     ' visible on rhino canvas, switch to shaded mode, and save the file.'
-                    )
+                )
             except AssertionError:
                 warnings.warn(tolerance_warning.format(obj.Attributes.Id))
                 continue
-            
+
             name = obj.Attributes.Name
 
             for face_obj in lb_faces:
@@ -95,15 +98,15 @@ def import_objects_with_config(
                 # If face_type settting is employed
                 if 'honeybee_face_type' in config['layers'][layer.Name]:
                     hb_faces.append(face3d_to_hb_face_with_face_type(config, face_obj,
-                                    name, layer.Name))
-                
+                                                                     name, layer.Name))
+
                 # If only radiance material settting is employed
                 elif 'honeybee_face_type' not in config['layers'][layer.Name] and\
                     'honeybee_face_object' not in config['layers'][layer.Name] and\
                         'radiance_material' in config['layers'][layer.Name]:
                     hb_faces.append(face3d_to_hb_face_with_rad(config, face_obj, name,
-                                    layer.Name))
-                
+                                                               layer.Name))
+
                 # If face_object settting is employed
                 elif 'honeybee_face_object' in config['layers'][layer.Name]:
                     hb_objects = face3d_to_hb_object(config, face_obj, name, layer.Name)
@@ -111,7 +114,7 @@ def import_objects_with_config(
                     hb_doors.extend(hb_objects[1])
                     hb_shades.extend(hb_objects[2])
 
-    return hb_faces, hb_shades, hb_apertures, hb_doors, hb_grids
+    return hb_faces, hb_shades, hb_apertures, hb_doors, hb_grids, data
 
 
 def import_objects(file_3dm, layer, tolerance):
@@ -128,7 +131,7 @@ def import_objects(file_3dm, layer, tolerance):
     """
     hb_faces = []
     objects = objects_on_layer(file_3dm, layer=layer)
-    
+
     for obj in objects:
         try:
             lb_faces = to_face3d(obj, tolerance)
@@ -137,7 +140,7 @@ def import_objects(file_3dm, layer, tolerance):
                 'Shaded mesh could not be created for'
                 f' object with ID {obj.Attributes.Id}. Please make the object'
                 ' visible on rhino canvas, switch to shaded mode, and save the file.'
-                )
+            )
         except AssertionError:
             warnings.warn(tolerance_warning.format(obj.Attributes.Id))
             continue
@@ -157,4 +160,3 @@ def import_objects(file_3dm, layer, tolerance):
             hb_faces.append(hb_face)
 
     return hb_faces
-    
