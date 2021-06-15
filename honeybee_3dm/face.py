@@ -48,7 +48,8 @@ def import_objects_with_config(
 
     """
     # Placeholders
-    hb_faces, hb_shades, hb_apertures, hb_doors, hb_grids = ([], [], [], [], [])
+    hb_faces, hb_shades, hb_apertures, hb_doors, hb_grids, data = (
+        [], [], [], [], [], [])
 
     # If Grids are requested for a layer
     if grid_controls(config, layer.Name):
